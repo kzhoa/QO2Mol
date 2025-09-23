@@ -26,6 +26,11 @@ def prepare_train_dataset(root_dir, split_valid=True):
     num_sep = int(num_samples * 0.9)
     train_split, test_split = rand_indices[:num_sep], rand_indices[num_sep:]
 
+    # Here is a simply random split example.
+    # To better evaluate the model,
+    # we would recommend to use `main_chunk_9` as the testing set,
+    # with `main_chunk_0~chunk_8` the training set.
+    # However, this is not mandatory.
     if split_valid:
         train_num = int(0.8 * num_sep)
         train_idx = train_split[:train_num]
