@@ -19,9 +19,14 @@
        loading="lazy">
 </div>
 
-# 🌟QO2Mol Dataset
+<h1 align="center">🌟QO2Mol Dataset</h1>
 
-<img alt="" src="https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-blue" style="max-width: 100%;"> <img alt="" src="https://img.shields.io/badge/python->=3.11.0-blue" style="max-width: 100%;">
+<p align="center">
+<img alt="" src="https://img.shields.io/badge/python->=3.11-blue" style="max-width: 100%;">
+<a href="https://developer.nvidia.com/cuda-downloads"><img src="https://img.shields.io/badge/GPU-CUDA%20Recommended-76B900?style=flat-square&logo=nvidia" alt="CUDA"/></a>
+<img alt="" src="https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-blue" style="max-width: 100%;">
+</p>
+
 
 Welcome to the Quantum Open Organic Molecular (QO2Mol)​ database!
 
@@ -30,14 +35,14 @@ Established in 2024, this database is continuously refined with annual updates t
 
 🥳 In Feb. 2026, we released the latest version **`v1.3.0`**, featuring more reasonable conformations and more precise structures.
 
->For users of the old version, we recommend upgrading to the latest data version. If you strongly depend on the old version, we have preserved all historical code in the `old_versions` directory, and you can still run them !
+>We recommend that users of older versions upgrade to the latest data release. However, if you have a strong dependency on an older version, all historical code has been preserved in the `old_versions` directory, allowing you to continue running them.
 
 ✨ QO2Mol is a curated dataset designed for advanced molecular research with:
 - A diverse collection of molecular structures, over 20 million configurations.
 - Comprehensive elemental coverage, including 10 essential elements (C, H, O, N, S, P, F, Cl, Br, I) to facilitate broad studies.
-- Key quantum mechanical properties, computed at the B3LYP/def2-SVP level.
+- Key quantum mechanical properties, optimized and computed at the B3LYP/def2-SVP level.
 - An ideal platform for AI-driven molecular research and the exploration of structure-property relationships.
-- open-source license.
+- Open-source license.
 
 
 
@@ -163,9 +168,11 @@ We encourage you to experiment with this script to compare performance or explor
 # ❓ FAQ
 
 **1️⃣ Check Data Integrity (Super Important!)**
+
 To make sure everything's as it should be, please **check the MD5 hash** against the one in [CHANGELOG.md](CHANGELOG.md). Most of the email questions we get are actually solved by this simple check!
 
 **2️⃣ Verify File Paths**
+
 Ensure all `.pkl` files are placed in the correct directory.
 
 ```bash
@@ -191,7 +198,7 @@ python -c "import numpy; print(numpy.__version__)"
 # Should be >=2.1.1
 ```
 
-If all checks pass but it still fails, Please [contact us](#contact-us) with full error messages.
+If all checks pass but it still fails, please [contact us](#contact-us) with full error messages.
 
 
 
