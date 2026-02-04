@@ -25,6 +25,13 @@
 
 Welcome to the Quantum Open Organic Molecular (QO2Mol)​ database!
 
+**Project History:**
+Established in 2024, this database is continuously refined with annual updates to its data and the removal of unreasonable structures.
+
+🥳 In Feb. 2026, we released the latest version **`v1.3.0`**, featuring more reasonable conformations and more precise structures.
+
+>For users of the old version, we recommend upgrading to the latest data version. If you strongly depend on the old version, we have preserved all historical code in the `old_versions` directory, and you can still run them !
+
 ✨ QO2Mol is a curated dataset designed for advanced molecular research with:
 - A diverse collection of molecular structures, over 20 million configurations.
 - Comprehensive elemental coverage, including 10 essential elements (C, H, O, N, S, P, F, Cl, Br, I) to facilitate broad studies.
@@ -50,14 +57,15 @@ Welcome to the Quantum Open Organic Molecular (QO2Mol)​ database!
 
 ## ☁️ Download Files
 
- Download the dataset files from our Google Drive: [Google Drive](https://drive.google.com/drive/folders/1-4FrnNrVBlL2RaBuXpalgNCk1q79VHtc?usp=drive_link)
+ Download the dataset files from our ☁️Google Drive: [Google Drive](https://drive.google.com/drive/folders/1-4FrnNrVBlL2RaBuXpalgNCk1q79VHtc?usp=drive_link)
 
 >💡 Tip:
 Check out [CHANGELOG.md](CHANGELOG.md) for the latest updates and version details!
-Note that the latest version now is `v1.3.0`.
+>
+>The latest version now is `v1.3.0`.
 
 After download , put all `*.pkl` files under `./download/raw/` directory.
-Make md5 hash check with values in CHANGELOG.md.
+Make md5 hash check with values in `CHANGELOG.md`.
 
 
 ## ⚙️ Setup Your Environment
@@ -109,7 +117,7 @@ Within each `.pkl` file, keys are listed as follows:
 | force         | List, length equal to the number of atoms multiplied by 3. Each element represents the force component (x, y, z) of an atom.                        |
 | net_charge    | Float, the overall charge of a molecule.                                                                                                            |
 | formal_charge | List, length equal to the number of atoms. Each element represents the formal charge of the corresponding atom.                                     |
-|ZPVE |  |
+| ZPVE          |                                                                                                                                                     |
 
 
 ## Note on Units
