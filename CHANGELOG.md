@@ -15,8 +15,8 @@ Additionally, full thermochemical corrections have been added for each structure
 - `QO2Mol26_Train_chunk7.pkl`, MD5: d6e826e0a4b3f868ad6df462431cf7d6
 - `QO2Mol26_Train_chunk8.pkl`, MD5: 8cabd344975277417c572a9bfc4fc03d
 - `QO2Mol26_Test.pkl`, MD5: 29cd9efdadb7b662e25ffbde2724707b
-- `QO2Mol26_OOD_large.pkl`, MD5: a5cb456be054bb9f7a0ceba0a1d5da76
-- `QO2Mol26_OOD_small.pkl`, MD5: 2a553f21d566dd733569b75c0e3a716b
+- `QO2Mol26_OOD_medium.pkl`, MD5: a5cb456be054bb9f7a0ceba0a1d5da76
+- `QO2Mol26_OOD_large.pkl`, MD5: 2a553f21d566dd733569b75c0e3a716b
 
 
 
