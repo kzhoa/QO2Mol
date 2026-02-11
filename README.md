@@ -87,7 +87,7 @@ pip install -r requirements.txt
 >Note that `torch_geometric` may need to be installed separately follow the instruction on [PyG Documentation](https://pytorch-geometric.readthedocs.io/en/latest/).
 
 
-## 🔄 Process the Data
+## 🐛 Process the Data
 
 Make sure you're in `/your/path/QO2Mol`
 
@@ -108,21 +108,21 @@ sh process_data.sh
 
 Within each `.pkl` file, keys are listed as follows:
 
-| Field         | Description                                                                                                                                         |
-| :------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
-| inchikey      | String, the identity of the conformer.                                                                                                              |
-| confid        | String, the identity of the conformer.                                                                                                              |
-| atom_count    | Integer, the number of atoms in the molecule.                                                                                                       |
-| bond_count    | Integer, the number of bonds in the molecule.                                                                                                       |
-| elements      | List, length equal to the number of atoms. Each value indicates the atomic number in the periodic table.                                            |
-| coordinates   | List, length equal to the number of atoms. Each element is a 3-tuple representing the 3D coordinates (x, y, z) of the corresponding atom.           |
-| edge_list     | List, length equal to the number of bonds multiplied by 2. Each element (i, j) represents an edge from atom i to atom j.                            |
-| edge_attr     | List, length equal to the number of bonds multiplied by 2. Each value represents a bond type. '1': single bond, '2': double bond, '3': triple bond. |
-| energy        | Float, the calculated potential energy of the molecule.                                                                                             |
-| force         | List, length equal to the number of atoms multiplied by 3. Each element represents the force component (x, y, z) of an atom.                        |
-| net_charge    | Float, the overall charge of a molecule.                                                                                                            |
-| formal_charge | List, length equal to the number of atoms. Each element represents the formal charge of the corresponding atom.                                     |
-| ZPVE          |                                                                                                                                                     |
+| Field         | Description                                                                                                                                          |
+| :------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| inchikey      | String, the identity of the conformer.                                                                                                               |
+| confid        | String, the identity of the conformer.                                                                                                               |
+| atom_count    | Integer, the number of atoms in the molecule.                                                                                                        |
+| bond_count    | Integer, the number of bonds in the molecule.                                                                                                        |
+| elements      | List, length equal to the number of atoms. Each value indicates the atomic number in the periodic table.                                             |
+| coordinates   | List, length equal to the number of atoms. Each element is a 3-tuple representing the 3D coordinates (x, y, z) of the corresponding atom.   Unit: Å. |
+| edge_list     | List, length equal to the number of bonds multiplied by 2. Each element (i, j) represents an edge from atom i to atom j.                             |
+| edge_attr     | List, length equal to the number of bonds multiplied by 2. Each value represents a bond type. '1': single bond, '2': double bond, '3': triple bond.  |
+| energy        | Float, the calculated potential energy of the molecule. Unit: eV.                                                                                    |
+| force         | List[List[float]], shape (N, 3). Each element represents the force component (x, y, z) of an atom. Unit: eV/Å​ .                                     |
+| net_charge    | Float, the overall charge of a molecule.                                                                                                             |
+| formal_charge | List, length equal to the number of atoms. Each element represents the formal charge of the corresponding atom.                                      |
+| ZPVE          | Float, zero-point vibrational energy.               Unit: Ha.                                                                                        |
 
 
 ## Note on Units
