@@ -33,7 +33,11 @@ Welcome to the Quantum Open Organic Molecular (QO2Mol)​ database!
 **Project History:**
 Established in 2024, this database is continuously refined with annual updates to its data and the removal of unreasonable structures.
 
+**Latest News:**
+
 🥳 In Feb. 2026, we released the latest version **`v1.3.0`**, featuring more reasonable conformations and more precise structures.
+
+🚀 We plan to supplement a substantial batch of new data in 2026, expanding the total volume to **100 million** entries.
 
 >We recommend that users of older versions upgrade to the latest data release. However, if you have a strong dependency on an older version, all historical code has been preserved in the `old_versions` directory, allowing you to continue running them.
 
