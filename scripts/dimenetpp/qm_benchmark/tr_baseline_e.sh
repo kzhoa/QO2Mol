@@ -1,3 +1,2 @@
-python \
-    src/entry/main_dimenet.py \
-    --config configs/dimenetpp/qmbenchmark/baseline_e.yml
+#!/bin/sh
+exec python -m baselines.train --config baselines/configs/dimenetpp.yml "$@"

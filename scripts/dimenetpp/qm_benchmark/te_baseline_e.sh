@@ -1,5 +1,6 @@
-python \
-    src/entry/main_dimenet.py \
-    --test \
-    --config logs/dimenetpp_qmbenchmark/baseline_e/config.yaml \
-    --ckp_file 'logs/dimenetpp_qmbenchmark/baseline_e/best_valid_checkpoint_ep496_val0.092.pt'
+#!/bin/sh
+set -eu
+: "${1:?Pass the checkpoint .pt file as the first argument}"
+checkpoint=$1
+shift
+exec python -m baselines.train --test --config baselines/configs/dimenetpp.yml --ckp "$checkpoint" "$@"

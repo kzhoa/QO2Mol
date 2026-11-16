@@ -1,0 +1,51 @@
+seed: 233
+log_dir: logs/spherenet_qmbenchmark/baseline_e
+print_freq: 500
+
+task:
+  dataset: qo2mol
+  data_root: download
+  standardize: true
+  dataloader:
+    batch_size: 256
+    eval_batch_size: 256
+    num_workers: 8
+    pin_memory: true
+
+model:
+  name: spherenet
+  num_layers: 6
+  hidden_channels: 128
+  int_emb_size: 64
+  num_spherical: 7
+  num_radial: 6
+  envelope_exponent: 5
+  basis_emb_size_dist: 16
+  basis_emb_size_angle: 16
+  basis_emb_size_torsion: 16
+  out_emb_channels: 256
+  cutoff: 5.0
+
+optim:
+  loss: mae
+  optimizer: adamw
+  optimizer_params:
+    lr: 0.0008
+    weight_decay: 0.0001
+  scheduler: lambda
+  scheduler_params:
+    step_on: valid_end
+    warmup_fraction: 0.01
+    initial_factor: 0.2
+    min_factor: 0.01
+
+runner:
+  run_mode: epoch
+  max_epochs: 300
+  eval_interval: 1
+  clip_grad: 10.0
+  early_stop:
+    target: val_metric
+    mode: min
+    min_delta: 0.0
+    patience: 300

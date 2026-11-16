@@ -1,0 +1,6 @@
+{"id":"ethanol","smiles":"CCO","source":"illustrative_example"}
+{"id":"acetanilide","smiles":"CC(=O)Nc1ccccc1","source":"illustrative_example"}
+{"id":"two_rings","smiles":"c1ccccc1CCc1ccncc1","source":"illustrative_example"}
+{"id":"stereo","smiles":"C[C@H](O)CC(=O)Nc1ccccc1","source":"illustrative_example"}
+{"id":"alkene_E","smiles":"c1ccccc1/C=C/c1ccccc1","source":"illustrative_example"}
+{"id":"isotope","smiles":"[13CH3]CO","source":"illustrative_example"}

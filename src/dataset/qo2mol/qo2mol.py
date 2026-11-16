@@ -1,121 +1,186 @@
-import copy
-import glob
+import logging
 import pickle
-import re
-import sys
-import time
+from bisect import bisect_right
+from itertools import accumulate
 from pathlib import Path
-from typing import List, Tuple, Union
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-import torch_geometric
-from torch_geometric.data import Data, InMemoryDataset
-from torch_geometric.data.separate import separate
-from tqdm import tqdm, trange
+from filelock import FileLock
+from qqtools import qData, qDictDataset
+from qqtools.qm import ensureAtomNumber
 
-proj_root = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.insert(0, str(proj_root))
+# eV per atom, fitted without an intercept on all v4 Main records.
+REF_ENERGIES = {
+    1: -16.317913385676807,
+    6: -1036.239848400066,
+    7: -1488.6023276581857,
+    8: -2045.266547983185,
+    9: -2714.676260744514,
+    15: -9288.809490307502,
+    16: -10831.817895018525,
+    17: -12518.89928730063,
+    35: -70038.33428031162,
+    53: -8103.095336224553,
+}
 
-from src.dataset.qo2mol.datasetbase import BaseQMDataset
-from src.dataset.qo2mol.utils import Timer, convert_std_input, read_moldata_file
-
-mp_atomNumber2Idx = {1: 0, 6: 1, 7: 2, 8: 3, 9: 4, 15: 5, 16: 6, 17: 7, 35: 8, 53: 9}
-REF_ENERGIES = [
-    -377.1312596544013,
-    -23896.71978240409,
-    -34329.56617414761,
-    -47167.507219805506,
-    -62605.90249199728,
-    -214201.9540501211,
-    -249791.03533796355,
-    -288696.57944521913,
-    -1615128.7577386901,
-    -186866.01419930425,
-]
+ENERGY_FIELDS = ("offsets", "z", "pos", "energy")
+CACHE_FIELDS = (*ENERGY_FIELDS, "ref_energy", "force")
 
 
-def assert_exists(fpaths):
-    if not isinstance(fpaths, (list, tuple)):
-        fpaths = [fpaths]
+def pack_chunk(records, first_index):
+    """Store contiguous atom arrays with molecule offsets for memory-mapped reads."""
+    atoms, positions, forces = [], [], []
+    energies, references = [], []
+    offsets = [0]
+    for index, record in enumerate(records, first_index):
+        elements = record["elements"]
+        if not isinstance(elements, (list, tuple, np.ndarray)):
+            elements = [elements]
+        # qqtools 1.3.28 accepts Python ints but rejects NumPy integer scalars.
+        z = ensureAtomNumber([int(el) if isinstance(el, np.integer) else el for el in elements])
+        pos = np.asarray(record.get("coordinates", record.get("position")), dtype=np.float64)
+        raw_force = record.get("forces", record.get("force"))
+        force = np.asarray(raw_force, dtype=np.float64) if raw_force is not None else np.zeros_like(pos)
+        if not z or pos.shape != (len(z), 3) or force.shape != pos.shape:
+            raise ValueError(f"Invalid molecular geometry at record {index}")
+        reference = sum(REF_ENERGIES[number] for number in z)
+        atoms.extend(z)
+        positions.append(pos)
+        forces.append(force)
+        energies.append(float(record["energy"]) - reference)
+        references.append(reference)
+        offsets.append(len(atoms))
 
-    for fp in fpaths:
-        assert Path(fp).exists(), f"{fp} not exists"
+    return dict(
+        z=torch.tensor(atoms, dtype=torch.long),
+        pos=torch.from_numpy(np.concatenate(positions)),
+        force=torch.from_numpy(np.concatenate(forces)),
+        energy=torch.tensor(energies, dtype=torch.float64),
+        ref_energy=torch.tensor(references, dtype=torch.float64),
+        offsets=torch.tensor(offsets),
+    )
 
 
-class QO2MolDataset(BaseQMDataset):
-    """
-    The QO2Mol Dataset
-    """
+def legacy_cache_path(cache):
+    return cache.with_suffix("").with_suffix(".tensors.pt")
 
-    atom_numbers = [1, 6, 7, 8, 9, 15, 16, 17, 35, 53]
-    main_file_names = [f"QO2Mol_main_chunk_{i}.pkl" for i in range(10)]
-    other_file_names = ["QO2Mol_set_b.pkl", "QO2Mol_set_c.pkl"]
 
-    def __init__(self, root, scope="main", force_reload=False, double=False):
-        with Timer("initinalizing ...", "[Dataset]"):
-            self.scope = scope
-            self.force_reload = force_reload
-            super().__init__(root)
+def ensure_chunk_cache(raw, cache, first_index, force_reload):
+    if cache.exists() and not force_reload:
+        return
+    # Coordinate all users of this shared cache, including independent jobs.
+    with FileLock(str(cache) + ".lock", timeout=-1):
+        if cache.exists() and not force_reload:
+            return
+        legacy = legacy_cache_path(cache)
+        if legacy.exists() and not force_reload:
+            old = torch.load(legacy, mmap=True, weights_only=True, map_location="cpu")
+            chunk = {key: old[key] for key in CACHE_FIELDS}
+            del old
+        else:
+            with Path(raw).open("rb") as handle:
+                chunk = pack_chunk(pickle.load(handle), first_index)
+        with NamedTemporaryFile(dir=cache.parent, delete=False) as tmp:
+            temp_path = Path(tmp.name)
+        try:
+            torch.save(chunk, temp_path)
+            temp_path.replace(cache)
+        finally:
+            temp_path.unlink(missing_ok=True)
 
-            self.data_dict = torch.load(str(self.processed_dir / self.data_filepath))
-            self._data, self.slices = self.data_dict["data"], self.data_dict["slices"]
-            self.check_double(double=double)
+
+class QO2MolDataset(qDictDataset):
+    main_file_names = [f"QO2Mol26_Main_chunk{i}.pkl" for i in range(10)]
+    ood_file_names = ["QO2Mol26_OOD_medium.pkl", "QO2Mol26_OOD_large.pkl"]
+    atom_numbers = list(REF_ENERGIES)
 
     @property
     def raw_file_names(self):
-        return self.train_file_names + self.test_file_names
+        scopes = {"main": self.main_file_names, "ood_medium": self.ood_file_names[:1],
+                  "ood_large": self.ood_file_names[1:]}
+        if self.scope not in scopes:
+            raise ValueError(f"Unknown scope {self.scope!r}; expected one of {tuple(scopes)}")
+        return scopes[self.scope]
 
     @property
     def processed_file_names(self):
-        return ["QO2Mol_main_processed.pt", "QO2Mol_b_processed.pt"]
+        return [Path(name).stem + ".v4-ref-ev.core.pt" for name in self.raw_file_names]
 
-    @property
-    def data_filepath(self):
-        if self.scope == "main":
-            return self.processed_file_names[0]
-        elif self.scope == "b":
-            return self.processed_file_names[1]
-
-    def _process(self):
-
-        # cache check
-        if all([Path(fp).exists() for fp in self.processed_paths]):
-            return
-
-        main_file_paths = [self.raw_dir / fn for fn in self.main_file_names]
-        set_b_file = self.raw_dir / self.other_file_names[0]
-        assert_exists(main_file_paths)
-        assert_exists(set_b_file)
+    def __init__(self, root, scope="main", force_reload=False, double=False, *, energy_only=False):
+        super().__init__()
+        self.root = Path(root)
+        self.scope = scope
+        self.energy_only = energy_only
+        self.dtype = torch.float64 if double else torch.float32
         self.processed_dir.mkdir(parents=True, exist_ok=True)
+        self.chunks = []
+        self._identifiers = {}
+        first_index = 0
+        paths = [(Path(raw), Path(cache)) for raw, cache in zip(self.raw_paths, self.processed_paths)]
+        for raw, cache in paths:
+            if not raw.is_file() and (force_reload or not (cache.is_file() or legacy_cache_path(cache).is_file())):
+                raise FileNotFoundError(f"Missing {self.scope} input: {raw}")
+        for number, (raw, cache) in enumerate(paths, 1):
+            action = "Reusing" if cache.is_file() and not force_reload else "Preparing"
+            logging.getLogger(__name__).info("[%d/%d] %s %s", number, len(paths), action, cache.name)
+            ensure_chunk_cache(raw, cache, first_index, force_reload)
+            chunk = torch.load(cache, mmap=True, weights_only=True, map_location="cpu")
+            if energy_only:
+                chunk = {key: chunk[key] for key in ENERGY_FIELDS}
+            self.chunks.append(chunk)
+            first_index += len(chunk["energy"])
+        self.ends = list(accumulate(len(chunk["energy"]) for chunk in self.chunks))
 
-        # we offer a reference energy table for quick start of usage.
-        # you can still employ your own referency energies.
-        self._process_files(main_file_paths, self.processed_paths[0], REF_ENERGIES)
-        self._process_files(set_b_file, self.processed_paths[1], REF_ENERGIES)
+    def len(self):
+        return self.ends[-1]
 
-    def _process_files(self, file_paths, processed_fp, reference_energies):
-        with Timer("1. Reading mol files..."):
-            input_datas, num_per_file = read_moldata_file(file_paths)
+    def __iter__(self):
+        for true_index in self.indices():
+            yield self.get(true_index)
 
-        with Timer("2. Converting to tensor..."):
-            data_list = convert_std_input(input_datas, mp_atomNumber2Idx, reference_energies)
-            del input_datas
+    def _chunk_identifiers(self, chunk_index):
+        if chunk_index not in self._identifiers:
+            raw = Path(self.raw_paths[chunk_index])
+            if raw.exists():
+                start = self.ends[chunk_index - 1] if chunk_index else 0
+                with raw.open("rb") as handle:
+                    records = pickle.load(handle)
+                identifiers = [(str(r.get("confid", i)), str(r.get("inchikey", "")))
+                               for i, r in enumerate(records, start)]
+            else:
+                legacy = legacy_cache_path(Path(self.processed_paths[chunk_index]))
+                if not legacy.exists():
+                    raise FileNotFoundError(f"Full sample identifiers require {raw}")
+                chunk = torch.load(legacy, mmap=True, weights_only=True, map_location="cpu")
+                identifiers = list(zip(chunk["name"], chunk["inchi_key"]))
+            self._identifiers[chunk_index] = identifiers
+        return self._identifiers[chunk_index]
 
-        with Timer("3. Collating datas..."):
-            data, slices = torch_geometric.data.InMemoryDataset.collate(data_list)
-            del data_list
+    def get(self, index):
+        index = range(self.len())[index]
+        chunk_index = bisect_right(self.ends, index)
+        chunk = self.chunks[chunk_index]
+        local = index - (self.ends[chunk_index - 1] if chunk_index else 0)
+        start, end = chunk["offsets"][local:local + 2].tolist()
+        sample = qData(num_nodes=end - start, z=chunk["z"][start:end],
+                       pos=chunk["pos"][start:end].to(self.dtype), energy=chunk["energy"][local].to(self.dtype))
+        if not self.energy_only:
+            name, inchi_key = self._chunk_identifiers(chunk_index)[local]
+            sample.update(atom_count=end - start, force=chunk["force"][start:end].to(self.dtype),
+                          ref_energy=chunk["ref_energy"][local].to(self.dtype),
+                          name=name, inchi_key=inchi_key)
+        return sample
 
-        data_dict = {"data": data, "slices": slices}
+    def get_norm_factor(self):
+        energy = torch.cat([chunk["energy"] for chunk in self.chunks]).to(self.dtype).numpy()
+        indices = self.indices()
+        if isinstance(indices, range) and indices.step == 1:
+            energy = energy[indices.start:indices.stop]
+        else:
+            energy = energy[np.asarray(indices, dtype=np.intp)]
+        return float(energy.mean()), float(energy.std())
 
-        with Timer(f"4. Saving to: {processed_fp}"):
-            torch.save(data_dict, processed_fp)
-
-
-if __name__ == "__main__":
-
-    root_dir = proj_root / "download"
-    print(f"data root: {root_dir}")
-    dataset = QO2MolDataset(root=root_dir)
-    print(dataset)
+    def get_elements(self):
+        return sorted(set().union(*(torch.unique(chunk["z"]).tolist() for chunk in self.chunks)))

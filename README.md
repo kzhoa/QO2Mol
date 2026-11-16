@@ -24,24 +24,17 @@
 <p align="center">
 <img alt="" src="https://img.shields.io/badge/python->=3.11-blue" style="max-width: 100%;">
 <a href="https://developer.nvidia.com/cuda-downloads"><img src="https://img.shields.io/badge/GPU-CUDA%20Recommended-76B900?style=flat-square&logo=nvidia" alt="CUDA"/></a>
-<img alt="" src="https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-blue" style="max-width: 100%;">
+<!-- <img alt="" src="https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-blue" style="max-width: 100%;"> -->
 </p>
 
 
-Welcome to the Quantum Open Organic Molecular (QO2Mol)​ database!
 
-**Project History:**
-Established in 2024, this database is continuously refined with annual updates to its data and the removal of unreasonable structures.
 
-**Latest News:**
+ > The latest version **`v2.0.0`**, featuring more reasonable conformations and more precise structures.
+ >
+>For datasets up to v1.2.0, follow the instructions in [legacy/readme.md](legacy/readme.md).
 
-🥳 In Feb. 2026, we released the latest version **`v1.3.0`**, featuring more reasonable conformations and more precise structures.
-
-🚀 We plan to supplement a substantial batch of new data in 2026, expanding the total volume to **100 million** entries.
-
->We recommend that users of older versions upgrade to the latest data release. However, if you have a strong dependency on an older version, all historical code has been preserved in the `old_versions` directory, allowing you to continue running them.
-
-✨ QO2Mol is a curated dataset designed for advanced molecular research with:
+QO2Mol is a dataset designed for advanced molecular research with:
 - A diverse collection of molecular structures, over 20 million configurations.
 - Comprehensive elemental coverage, including 10 essential elements (C, H, O, N, S, P, F, Cl, Br, I) to facilitate broad studies.
 - Key quantum mechanical properties, optimized and computed at the B3LYP/def2-SVP level.
@@ -50,34 +43,29 @@ Established in 2024, this database is continuously refined with annual updates t
 
 
 
-# 📑 Quick Navigation
+# Quick Navigation
 
-- [⏬ Prepare Data](#download)
-- [💫 Run Demo](#usage-demo)
-- [❓ FAQ](#faq)
-- [🤝 Contact & Contribute](#contact-us)
-- [📄 License](#-license)
-<!-- - [🔗 How to Cite](#cite) -->
+- [Prepare Data](#download)
+- [Run Demo](#usage-demo)
+- [FAQ](#faq)
+- [License](#-license)
 
 
-# ⏬ Prepare Data
+# Prepare Data
 
 <a id="download"></a>
 
-## ☁️ Download Files
+## Download Files
 
- Download the dataset files from our ☁️Google Drive: [Google Drive](https://drive.google.com/drive/folders/1-4FrnNrVBlL2RaBuXpalgNCk1q79VHtc?usp=drive_link)
+1. Download the `.zip` files from the [☁️ Zenodo Record](https://zenodo.org/records/23995922).
+2. For baseline training, extract the ten Main chunks (0–9). Extract the OOD archives if you plan to use those sets.
+3. Verify the MD5 checksums of the extracted `.pkl` files against [CHANGELOG.md](CHANGELOG.md).
+4. Put the extracted `.pkl` files under `./download/raw/`.
 
->💡 Tip:
-Check out [CHANGELOG.md](CHANGELOG.md) for the latest updates and version details!
->
->The latest version now is `v1.3.0`.
-
-After download , put all `*.pkl` files under `./download/raw/` directory.
-Make md5 hash check with values in `CHANGELOG.md`.
+For version details and file checksums, please refer to [CHANGELOG.md](CHANGELOG.md).
 
 
-## ⚙️ Setup Your Environment
+## Setup Environment
 
 ```bash
 # Clone this repository
@@ -88,23 +76,22 @@ cd QO2Mol
 pip install -r requirements.txt
 ```
 
->Note that `torch_geometric` may need to be installed separately follow the instruction on [PyG Documentation](https://pytorch-geometric.readthedocs.io/en/latest/).
+The training entry requires PyTorch and qqtools 1.3.29 or later.
 
 
 ## 🐛 Process the Data
 
-Make sure you're in `/your/path/QO2Mol`
+From the repository root, you can prepare the ten Main chunks before starting training. Training also creates missing Main caches on first use.
 
-Then run the data processing script.
 ```bash
-sh process_data.sh
+python -m src.dataset.process
 ```
 
+> ⚠️ The first run might take 30–60 minutes — perfect time for a coffee break ☕️!
 
->⚠️This process might take 30-60 minutes — perfect time for a coffee break☕️!
+The script reads one pickle at a time from `download/raw/` and writes a tensor cache per chunk under `download/processed/`. Unpickling a chunk requires substantially more RAM than its file size. If interrupted, rerun the same command to reuse completed chunks.
 
-
->💡 If you encounter an error, please check the [FAQ](#faq) first.
+To prepare a specific OOD set, pass `--scope ood_medium` or `--scope ood_large`. To prepare Main and both OOD sets, run `python -m src.dataset.process --scope all`. Use `--root /path/to/data` for a different directory containing `raw/`.
 
 
 
@@ -112,21 +99,25 @@ sh process_data.sh
 
 Within each `.pkl` file, keys are listed as follows:
 
-| Field         | Description                                                                                                                                          |
-| :------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
-| inchikey      | String, the identity of the conformer.                                                                                                               |
-| confid        | String, the identity of the conformer.                                                                                                               |
-| atom_count    | Integer, the number of atoms in the molecule.                                                                                                        |
-| bond_count    | Integer, the number of bonds in the molecule.                                                                                                        |
-| elements      | List, length equal to the number of atoms. Each value indicates the atomic number in the periodic table.                                             |
-| coordinates   | List, length equal to the number of atoms. Each element is a 3-tuple representing the 3D coordinates (x, y, z) of the corresponding atom.   Unit: Å. |
-| edge_list     | List, length equal to the number of bonds multiplied by 2. Each element (i, j) represents an edge from atom i to atom j.                             |
-| edge_attr     | List, length equal to the number of bonds multiplied by 2. Each value represents a bond type. '1': single bond, '2': double bond, '3': triple bond.  |
-| energy        | Float, the calculated potential energy of the molecule. Unit: eV.                                                                                    |
-| force         | List[List[float]], shape (N, 3). Each element represents the force component (x, y, z) of an atom. Unit: eV/Å​ .                                     |
-| net_charge    | Float, the overall charge of a molecule.                                                                                                             |
-| formal_charge | List, length equal to the number of atoms. Each element represents the formal charge of the corresponding atom.                                      |
-| ZPVE          | Float, zero-point vibrational energy.               Unit: Ha.                                                                                        |
+| Field               | Description                                                                                                                                          |
+| :------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| inchikey            | String, the identity of the conformer.                                                                                                               |
+| confid              | String, the identity of the conformer.                                                                                                               |
+| atom_count          | Integer, the number of atoms in the molecule.                                                                                                        |
+| bond_count          | Integer, the number of bonds in the molecule.                                                                                                        |
+| elements            | List, length equal to the number of atoms. Each value indicates the atomic number in the periodic table.                                             |
+| coordinates         | List, length equal to the number of atoms. Each element is a 3-tuple representing the 3D coordinates (x, y, z) of the corresponding atom.   Unit: Å. |
+| edge_list           | List, length equal to the number of bonds multiplied by 2. Each element (i, j) represents an edge from atom i to atom j.                             |
+| edge_attr           | List, length equal to the number of bonds multiplied by 2. Each value represents a bond type. '1': single bond, '2': double bond, '3': triple bond.  |
+| energy              | Float, the calculated potential energy of the molecule. Unit: eV.                                                                                    |
+| forces              | Cartesian forces in stored atom order, shape (N, 3). Each row gives the x, y, and z force components for one atom in eV/Å.                           |
+| net_charge          | Scalar, the overall charge of a molecule.                                                                                                            |
+| formal_charge       | List, length equal to the number of atoms. Each element represents the formal charge of the corresponding atom.                                      |
+| zpe_correction      | Float, correction to zero-point vibrational energy.               Unit: Ha.                                                                          |
+| thermal_corrections | Dictionary containing the thermal corrections to energy, enthalpy, and gibbs. These are correction terms rather than corrected totals. Unit: Ha.     |
+| iso_polar           | Float, the static isotropic polarizability. Unit: Bohr³.                                                                                             |
+| ese                 | Float, the electronic spatial extent, ⟨R²⟩. Unit: Bohr² (atomic units).                                                                              |
+| dipole              | Tuple of three floats (μx, μy, μz), representing the dipole-moment components in the Gaussian input orientation. Unit: Debye.                        |
 
 
 ## Note on Units
@@ -139,37 +130,32 @@ With these constants, you can easily switch back to atomic units and then conver
 
 <a id="usage-demo"></a>
 
-# 💫 Example Usage
+# Example Usage
 
 
-## Train a DimeNet Model
-We provide a demo for training `dimenet` model on `QO2Mol`.
+## Train baseline
 
+From the repository root, run the command for your model.
 
-First Navigate to the repository root.
-Execute the training script using the following command:
+| Model | Training command |
+| --- | --- |
+| DimeNet++ | `sh scripts/dimenetpp/qm_benchmark/tr_baseline_e.sh` |
+| SphereNet | `sh scripts/spherenet/tr_baseline_e.sh` |
+
+The optional training code lives in `baselines/`. Both scripts run `python -m baselines.train` with a model configuration from `baselines/configs/` and forward command-line overrides.
+The default data root is `download/`. Each baseline builds tensor caches from the ten Main chunks on first use.
+Each chunk cache stores `offsets`, `z`, `pos`, `force`, `energy` (residual eV), and `ref_energy` (summed atomic reference eV). Their two energy fields sum to the raw SCF energy. Energy-only training uses the tensor cache directly. Full samples also expose conformer identifiers, read from the raw pickle on first access to that chunk.
+Main chunk 9 is the test set. From chunks 0–8, the baseline randomly selects 10% of conformers (rounded down) for validation using the configured seed and uses the rest for training. Energy standardization uses the training split. The fixed atomic reference energies were fitted on all ten Main chunks.
+
+To report test energy MAE in eV, use the same config and dataset as the training run. For example, to evaluate a DimeNet++ checkpoint, run
+
 ```bash
-sh scripts/dimenetpp/qm_benchmark/tr_baseline_e.sh
+python -m baselines.train --config baselines/configs/dimenetpp.yml --test --ckp /path/to/best.pt
 ```
-
-Upon successful completion, a training progress bar will appear in your terminal.
-
-
-## Explore SphereNet Alternative
-
-For users interested in exploring an alternative model, a comparable training script for SphereNet is available. This script allows you to train a SphereNet model on the `QO2MOL` dataset, similar to the DimeNet example.
-
-Navigate to the repository root directory.
-Execute the SphereNet training script using the following command:
-```bash
-sh scripts/spherenet/tr_baseline_e.sh
-```
-We encourage you to experiment with this script to compare performance or explore different model architectures.
-
 
 <a id="faq"></a>
 
-# ❓ FAQ
+# FAQ
 
 **1️⃣ Check Data Integrity (Super Important!)**
 
@@ -202,7 +188,7 @@ python -c "import numpy; print(numpy.__version__)"
 # Should be >=2.1.1
 ```
 
-If all checks pass but it still fails, please [contact us](#contact-us) with full error messages.
+If all checks pass but it still fails, please contact us with full error messages.
 
 
 
@@ -215,17 +201,14 @@ If all checks pass but it still fails, please [contact us](#contact-us) with ful
 ``` -->
 
 
-<a id="contact-us"></a>
+# License
 
-# 🤝 Get Help & Contribute
+### Code
 
+The code in this repository is licensed under the MIT License.
+See [LICENSE](LICENSE) for the full license text.
 
-We are excited about your interest in our project! Whether you have a question, need assistance, or want to contribute, we're here to help and collaborate.
+### Data
 
-
-
-
-
-# 📄 License
-
-This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. The images or other third party material in this article are included in the article’s Creative Commons license, unless indicated otherwise in the credit line; if the material is not included under the Creative Commons license, users will need to obtain permission from the license holder to reproduce the material. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/.
+The datasets are hosted on Zenodo DOI:  [10.5281/zenodo.23995922](https://doi.org/10.5281/zenodo.23995922).
+Please refer to the corresponding Zenodo record for the data license and terms of use.

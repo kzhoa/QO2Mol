@@ -1,0 +1,54 @@
+seed: 377
+log_dir: logs/dimenetpp_qmbenchmark/baseline_e
+print_freq: 100
+
+task:
+  dataset: qo2mol
+  data_root: download
+  standardize: true
+  dataloader:
+    batch_size: 256
+    eval_batch_size: 256
+    num_workers: 8
+    pin_memory: true
+
+model:
+  name: dimenetpp
+  num_blocks: 4
+  hidden_channels: 128
+  out_channels: 1
+  int_emb_size: 64
+  basis_emb_size: 16
+  out_emb_channels: 256
+  num_spherical: 8
+  num_radial: 6
+  envelope_exponent: 5
+  max_num_neighbors: 32
+  cutoff: 5.0
+  num_before_skip: 1
+  num_after_skip: 2
+  num_output_layers: 3
+
+optim:
+  loss: mae
+  optimizer: adamw
+  optimizer_params:
+    lr: 0.0008
+    weight_decay: 0.0001
+  scheduler: lambda
+  scheduler_params:
+    step_on: valid_end
+    warmup_fraction: 0.01
+    initial_factor: 0.2
+    min_factor: 0.01
+
+runner:
+  run_mode: epoch
+  max_epochs: 500
+  eval_interval: 1
+  clip_grad: 10.0
+  early_stop:
+    target: val_metric
+    mode: min
+    min_delta: 0.0
+    patience: 500

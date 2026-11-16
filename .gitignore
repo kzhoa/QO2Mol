@@ -1,5 +1,7 @@
 .vscode
-download/raw/*
-download/processed/*
+/download/
+.ipynb_checkpoints/
+.pytest_cache/
 __pycache__
 logs/*
+**/supplementary_tools/examples/**/**/output_*/

@@ -1,12 +1,5 @@
-tqdm==4.66.5
-numpy==2.1.1
-scipy==1.14.1
-pandas==2.2.3
-scikit-learn==1.5.2
-torch==2.2.2
-torch-cluster==1.6.3
-torch-geometric==2.3.1
-torch-scatter==2.1.2
-torch-sparse==0.6.18
-torch-spline-conv==1.2.2
-qqtools==1.1.9
+torch>=2.6
+filelock
+qqtools>=1.3.29
+numpy>=2.1.1
+sympy

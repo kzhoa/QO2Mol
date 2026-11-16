@@ -1,3 +1,20 @@
+v2.0.0 - Nov. 2026
+
+We rebuilt the data-generation pipeline and corrected several errors in the dataset.
+
+- `QO2Mol26_Main_chunk0.pkl`, MD5: `ed70819409616ec1dc001c654dc8cae9`
+- `QO2Mol26_Main_chunk1.pkl`, MD5: `8f63e9a7c08ec9e668c39d3bc55dc816`
+- `QO2Mol26_Main_chunk2.pkl`, MD5: `3d59cd66862c54e56d7bc6546453dfad`
+- `QO2Mol26_Main_chunk3.pkl`, MD5: `25c217a2c881f6863c76f0157f87c584`
+- `QO2Mol26_Main_chunk4.pkl`, MD5: `0318da32b4e219d01cef2526d7c74309`
+- `QO2Mol26_Main_chunk5.pkl`, MD5: `a8bc4da4c9b947582df1128e8660149d`
+- `QO2Mol26_Main_chunk6.pkl`, MD5: `68e22dca7598dd71120797a56d704398`
+- `QO2Mol26_Main_chunk7.pkl`, MD5: `865458016994284891436932edd91978`
+- `QO2Mol26_Main_chunk8.pkl`, MD5: `fead9ec568adce577e42e37453c41b5a`
+- `QO2Mol26_Main_chunk9.pkl`, MD5: `182bc0548a5a558aa4aaf4b501e42ed7`
+- `QO2Mol26_OOD_large.pkl`, MD5: `0b2c585af1ca3b75dc7cffcf41233f21`
+- `QO2Mol26_OOD_medium.pkl`, MD5: `c00823799d47f60e06c3b9f1b5107e71`
+
 v1.3.0 - Feb. 2026
 
 We have updated a portion of the structures and eliminated some unreasonable conformations.

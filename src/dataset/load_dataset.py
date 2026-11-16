@@ -1,43 +1,16 @@
-import argparse
-import datetime
-import gc
-import os
-import pickle
-import random
-import sys
-import time
-from pathlib import Path
-
 import numpy as np
-import pandas as pd
-import torch
-from torch_geometric.loader import DataLoader
 
 from .qo2mol import QO2MolDataset
 
-proj_root = str(Path(__file__).parent.parent.parent.resolve())
 
-
-def prepare_train_dataset(root_dir, split_valid=True):
-    tr_dataset = QO2MolDataset(root=root_dir)
-    num_samples = len(tr_dataset)
-    rand_indices = list(range(num_samples))
-    np.random.shuffle(rand_indices)
-    num_sep = int(num_samples * 0.9)
-    train_split, test_split = rand_indices[:num_sep], rand_indices[num_sep:]
-
-    # Here is a simply random split example.
-    # To better evaluate the model,
-    # we would recommend to use `main_chunk_9` as the testing set,
-    # with `main_chunk_0~chunk_8` the training set.
-    # However, this is not mandatory.
-    if split_valid:
-        train_num = int(0.8 * num_sep)
-        train_idx = train_split[:train_num]
-        valid_idx = train_split[train_num:]
-        train_dataset = tr_dataset[train_idx]
-        valid_dataset = tr_dataset[valid_idx]
-        test_dataset = tr_dataset[test_split]
-        return train_dataset, valid_dataset, test_dataset
-    else:
-        return tr_dataset[train_split], tr_dataset[test_split]
+def prepare_train_dataset(root_dir, split_valid=True, seed=None, *, energy_only=False):
+    dataset = QO2MolDataset(root_dir, energy_only=energy_only)
+    # ends contains exclusive global offsets in Main chunk order.
+    test_start = dataset.ends[-2]
+    test = dataset[test_start:]
+    if not split_valid:
+        return dataset[:test_start], test
+    rng = np.random if seed is None else np.random.RandomState(seed)
+    indices = rng.permutation(test_start)
+    valid_size = test_start // 10
+    return dataset[indices[valid_size:]], dataset[indices[:valid_size]], test
